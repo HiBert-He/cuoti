@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mistake Log</title>
+  <title>错题本</title>
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#4f46e5">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Mistake Log">
+  <meta name="apple-mobile-web-app-title" content="错题本">
   <link rel="apple-touch-icon" href="icon.svg">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -344,7 +344,7 @@
 
 <div class="header">
   <div class="header-top">
-    <h1><span>📚</span>Mistake Log</h1>
+    <h1><span>📚</span>错题本</h1>
     <div class="stats-bar">
       <div class="stat-item">
         <span class="stat-num" id="stat-total">0</span>
@@ -427,7 +427,13 @@
         </div>
         <div class="form-group">
           <label>正确答案 <span class="req">*</span></label>
-          <textarea id="form-correct" placeholder="填写正确答案..."></textarea>
+          <textarea id="form-correct" placeholder="填写正确答案（若已上传参考图片可留空）..."></textarea>
+          <div class="upload-area" id="upload-area-answer" style="padding:12px">
+            <input type="file" id="form-answer-images" accept="image/*" multiple onchange="handleAnswerImages(this)">
+            <div class="upload-icon" style="font-size:22px;margin-bottom:4px">📷</div>
+            <p style="font-size:12px">上传参考答案图片</p>
+          </div>
+          <div class="preview-grid" id="preview-grid-answer"></div>
         </div>
         <div class="form-group full">
           <label>错误原因 / 知识点</label>
@@ -536,17 +542,26 @@ function updateSubjectSelects() {
 }
 
 // ── Image Upload & Compression ───────────────────────────────────
-let pendingImages = []; // [{dataUrl, name}]
+let pendingImages = [];       // 题目图片
+let pendingAnswerImages = []; // 参考答案图片
 
 function handleImages(input) {
+  handleImageUpload(input, pendingImages, renderPreviews, 'preview-grid');
+}
+
+function handleAnswerImages(input) {
+  handleImageUpload(input, pendingAnswerImages, renderAnswerPreviews, 'preview-grid-answer');
+}
+
+function handleImageUpload(input, arr, renderFn, gridId) {
   const files = Array.from(input.files);
   if (!files.length) return;
-  const remaining = 5 - pendingImages.length;
+  const remaining = 5 - arr.length;
   if (remaining <= 0) { showToast('最多上传 5 张图片'); return; }
   files.slice(0, remaining).forEach(file => {
     compressImage(file, 800, 0.82, dataUrl => {
-      pendingImages.push({ dataUrl, name: file.name });
-      renderPreviews();
+      arr.push({ dataUrl, name: file.name });
+      renderFn();
     });
   });
   input.value = '';
@@ -573,11 +588,19 @@ function compressImage(file, maxPx, quality, cb) {
 }
 
 function renderPreviews() {
-  const grid = document.getElementById('preview-grid');
-  grid.innerHTML = pendingImages.map((img, i) => `
+  renderPreviewGrid('preview-grid', pendingImages, 'removePreview');
+}
+
+function renderAnswerPreviews() {
+  renderPreviewGrid('preview-grid-answer', pendingAnswerImages, 'removeAnswerPreview');
+}
+
+function renderPreviewGrid(gridId, arr, removeFn) {
+  const grid = document.getElementById(gridId);
+  grid.innerHTML = arr.map((img, i) => `
     <div class="preview-item">
       <img src="${img.dataUrl}" alt="">
-      <button class="remove-img" onclick="removePreview(${i})">✕</button>
+      <button class="remove-img" onclick="${removeFn}(${i})">✕</button>
     </div>
   `).join('');
 }
@@ -585,6 +608,11 @@ function renderPreviews() {
 function removePreview(i) {
   pendingImages.splice(i, 1);
   renderPreviews();
+}
+
+function removeAnswerPreview(i) {
+  pendingAnswerImages.splice(i, 1);
+  renderAnswerPreviews();
 }
 
 // ── Add Question ─────────────────────────────────────────────────
@@ -595,7 +623,7 @@ function addQuestion() {
 
   if (!subject) return showToast('请选择科目');
   if (!question && pendingImages.length === 0) return showToast('请填写题目内容或上传图片');
-  if (!correct)  return showToast('请填写正确答案');
+  if (!correct && pendingAnswerImages.length === 0) return showToast('请填写正确答案或上传参考答案图片');
 
   const q = {
     id:      Date.now(),
@@ -605,6 +633,7 @@ function addQuestion() {
     images:  pendingImages.map(i => i.dataUrl),
     wrong:   document.getElementById('form-wrong').value.trim(),
     correct,
+    answerImages: pendingAnswerImages.map(i => i.dataUrl),
     reason:  document.getElementById('form-reason').value.trim(),
     mastered: false,
     date:    new Date().toLocaleDateString('zh-CN'),
@@ -625,6 +654,8 @@ function clearForm() {
     .forEach(id => document.getElementById(id).value = '');
   pendingImages = [];
   renderPreviews();
+  pendingAnswerImages = [];
+  renderAnswerPreviews();
 }
 
 // ── Delete / Toggle mastered ──────────────────────────────────────
@@ -702,7 +733,8 @@ function renderList() {
         </div>` : '<div></div>'}
         <div class="q-answer-block q-correct">
           <div class="label">✓ 正确答案</div>
-          ${escHtml(q.correct)}
+          ${q.correct ? escHtml(q.correct) : ''}
+          ${(q.answerImages||[]).length ? `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">${q.answerImages.map(src=>`<img src="${src}" onclick="openLightbox(this)" style="height:60px;border-radius:4px;cursor:pointer;object-fit:cover">`).join('')}</div>` : ''}
         </div>
       </div>
       ${q.reason ? `
@@ -776,7 +808,8 @@ function renderReview() {
         </div>
         <div class="answer-block" style="background:var(--success-light)">
           <div class="label" style="color:#16a34a">✓ 正确答案</div>
-          ${escHtml(q.correct)}
+          ${q.correct ? escHtml(q.correct) : ''}
+          ${(q.answerImages||[]).length ? `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">${q.answerImages.map(src=>`<img src="${src}" onclick="openLightbox(this)" style="height:70px;border-radius:6px;cursor:pointer;object-fit:cover">`).join('')}</div>` : ''}
         </div>
         ${q.reason ? `
         <div class="answer-block" style="background:#fffbeb;color:#92400e">
