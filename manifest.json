@@ -1,6 +1,6 @@
 {
-  "name": "错题本",
-  "short_name": "错题本",
+  "name": "Mistake Log",
+  "short_name": "Mistake Log",
   "description": "帮助学生整理和复习错题的学习工具",
   "start_url": "./index.html",
   "display": "standalone",
