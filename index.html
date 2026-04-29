@@ -1,0 +1,1026 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>错题本</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#4f46e5">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="错题本">
+  <link rel="apple-touch-icon" href="icon.svg">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --primary: #4f46e5;
+      --primary-light: #e0e7ff;
+      --danger: #ef4444;
+      --success: #22c55e;
+      --success-light: #dcfce7;
+      --warning: #f59e0b;
+      --gray-50: #f9fafb;
+      --gray-100: #f3f4f6;
+      --gray-200: #e5e7eb;
+      --gray-400: #9ca3af;
+      --gray-600: #4b5563;
+      --gray-800: #1f2937;
+      --radius: 12px;
+      --shadow: 0 2px 12px rgba(0,0,0,0.08);
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: var(--gray-50);
+      color: var(--gray-800);
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    .header {
+      background: var(--primary);
+      color: white;
+      padding: 20px 24px 0;
+      box-shadow: 0 2px 8px rgba(79,70,229,0.3);
+    }
+    .header-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+    .header h1 { font-size: 22px; font-weight: 700; letter-spacing: 1px; }
+    .header h1 span { font-size: 26px; margin-right: 6px; }
+    .stats-bar { display: flex; gap: 20px; font-size: 13px; opacity: 0.9; }
+    .stat-item { display: flex; flex-direction: column; align-items: center; }
+    .stat-num { font-size: 22px; font-weight: 700; line-height: 1; }
+    .stat-label { font-size: 11px; opacity: 0.8; margin-top: 2px; }
+
+    /* ── Tabs ── */
+    .tabs { display: flex; margin-top: 16px; gap: 4px; flex-wrap: wrap; }
+    .tab {
+      padding: 10px 18px;
+      border-radius: 10px 10px 0 0;
+      font-size: 14px; font-weight: 500;
+      cursor: pointer;
+      color: rgba(255,255,255,0.7);
+      transition: all 0.2s;
+      user-select: none;
+    }
+    .tab:hover { color: white; background: rgba(255,255,255,0.1); }
+    .tab.active { background: var(--gray-50); color: var(--primary); font-weight: 600; }
+
+    /* ── Main ── */
+    .main { padding: 20px 24px; max-width: 860px; margin: 0 auto; }
+    .panel { display: none; }
+    .panel.active { display: block; }
+
+    /* ── Card ── */
+    .card {
+      background: white;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+
+    /* ── Form ── */
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .form-group.full { grid-column: 1 / -1; }
+    label { font-size: 13px; font-weight: 600; color: var(--gray-600); }
+    label span.req { color: var(--danger); margin-left: 2px; }
+    input, textarea, select {
+      border: 1.5px solid var(--gray-200);
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 14px;
+      font-family: inherit;
+      color: var(--gray-800);
+      transition: border-color 0.2s;
+      outline: none;
+      background: white;
+    }
+    input:focus, textarea:focus, select:focus { border-color: var(--primary); }
+    textarea { resize: vertical; min-height: 80px; line-height: 1.6; }
+    .form-actions { margin-top: 16px; display: flex; gap: 10px; flex-wrap: wrap; }
+
+    /* ── Image Upload ── */
+    .upload-area {
+      border: 2px dashed var(--gray-200);
+      border-radius: 10px;
+      padding: 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      position: relative;
+    }
+    .upload-area:hover { border-color: var(--primary); background: var(--primary-light); }
+    .upload-area input[type=file] {
+      position: absolute; inset: 0; opacity: 0; cursor: pointer;
+      width: 100%; height: 100%; border: none; padding: 0;
+    }
+    .upload-area .upload-icon { font-size: 32px; margin-bottom: 8px; }
+    .upload-area p { font-size: 13px; color: var(--gray-600); }
+    .upload-area small { font-size: 11px; color: var(--gray-400); }
+    .preview-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+      gap: 10px;
+      margin-top: 12px;
+    }
+    .preview-item {
+      position: relative;
+      border-radius: 8px;
+      overflow: hidden;
+      aspect-ratio: 1;
+      background: var(--gray-100);
+    }
+    .preview-item img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .preview-item .remove-img {
+      position: absolute; top: 4px; right: 4px;
+      background: rgba(0,0,0,0.6); color: white;
+      border: none; border-radius: 50%;
+      width: 22px; height: 22px;
+      font-size: 12px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    /* ── Buttons ── */
+    .btn {
+      padding: 10px 22px;
+      border-radius: 8px;
+      font-size: 14px; font-weight: 600;
+      cursor: pointer; border: none;
+      transition: all 0.2s;
+      font-family: inherit;
+    }
+    .btn-primary { background: var(--primary); color: white; }
+    .btn-primary:hover { background: #4338ca; transform: translateY(-1px); }
+    .btn-secondary { background: var(--gray-100); color: var(--gray-600); }
+    .btn-secondary:hover { background: var(--gray-200); }
+    .btn-danger { background: #fee2e2; color: var(--danger); }
+    .btn-danger:hover { background: #fecaca; }
+    .btn-success { background: var(--success-light); color: #16a34a; }
+    .btn-success:hover { background: #bbf7d0; }
+    .btn-sm { padding: 6px 12px; font-size: 12px; }
+
+    /* ── Filter bar ── */
+    .filter-bar { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+    .filter-bar input { flex: 1; min-width: 180px; }
+    .filter-bar select { min-width: 120px; }
+    .filter-bar .show-mastered {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 13px; color: var(--gray-600);
+      cursor: pointer; white-space: nowrap; padding: 0 8px;
+    }
+    .filter-bar .show-mastered input[type=checkbox] { width: 16px; height: 16px; cursor: pointer; }
+
+    /* ── Question cards ── */
+    .question-card {
+      background: white;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 18px 20px;
+      margin-bottom: 12px;
+      border-left: 4px solid var(--primary);
+      transition: transform 0.15s;
+    }
+    .question-card:hover { transform: translateX(2px); }
+    .question-card.mastered { border-left-color: var(--success); opacity: 0.7; }
+    .question-card.mastered .q-subject { background: var(--success-light); color: #16a34a; }
+
+    .q-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+    .q-subject { background: var(--primary-light); color: var(--primary); font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 20px; }
+    .q-date { font-size: 12px; color: var(--gray-400); margin-left: auto; }
+    .q-mastered-badge { background: var(--success-light); color: #16a34a; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 20px; }
+    .q-title { font-size: 15px; font-weight: 600; margin-bottom: 10px; line-height: 1.6; }
+    .q-images { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+    .q-images img { height: 80px; border-radius: 6px; cursor: pointer; object-fit: cover; border: 1px solid var(--gray-200); transition: opacity 0.2s; }
+    .q-images img:hover { opacity: 0.85; }
+    .q-answers { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+    .q-answer-block { padding: 10px 12px; border-radius: 8px; font-size: 13px; line-height: 1.5; }
+    .q-wrong { background: #fee2e2; }
+    .q-wrong .label { color: var(--danger); font-weight: 700; font-size: 11px; margin-bottom: 3px; }
+    .q-correct { background: var(--success-light); }
+    .q-correct .label { color: #16a34a; font-weight: 700; font-size: 11px; margin-bottom: 3px; }
+    .q-reason { background: #fffbeb; border-radius: 8px; padding: 10px 12px; font-size: 13px; color: #92400e; line-height: 1.5; margin-bottom: 10px; }
+    .q-reason .label { font-weight: 700; font-size: 11px; margin-bottom: 3px; color: var(--warning); }
+    .q-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+    .empty-state { text-align: center; padding: 60px 20px; color: var(--gray-400); }
+    .empty-state .icon { font-size: 48px; margin-bottom: 12px; }
+    .empty-state p { font-size: 15px; margin-bottom: 6px; }
+    .empty-state small { font-size: 13px; }
+
+    /* ── Review mode ── */
+    .review-controls { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+    .review-controls select { min-width: 140px; }
+    .review-progress { font-size: 13px; color: var(--gray-600); margin-left: auto; }
+    .review-card {
+      background: white;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 32px;
+      text-align: center;
+      min-height: 280px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    .review-subject-badge { display: inline-block; background: var(--primary-light); color: var(--primary); font-size: 13px; font-weight: 700; padding: 4px 14px; border-radius: 20px; margin-bottom: 20px; }
+    .review-question { font-size: 18px; font-weight: 600; line-height: 1.7; margin-bottom: 16px; color: var(--gray-800); }
+    .review-images { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-bottom: 20px; }
+    .review-images img { max-height: 180px; border-radius: 8px; cursor: pointer; border: 1px solid var(--gray-200); }
+    .review-answer { margin-top: 20px; text-align: left; }
+    .review-answer .answer-block { padding: 14px 16px; border-radius: 10px; margin-bottom: 10px; font-size: 14px; line-height: 1.6; }
+    .review-answer .answer-block .label { font-weight: 700; font-size: 12px; margin-bottom: 4px; }
+    .review-nav { display: flex; justify-content: center; gap: 12px; margin-top: 20px; flex-wrap: wrap; }
+    .no-review { text-align: center; padding: 60px; color: var(--gray-400); }
+    .no-review .icon { font-size: 48px; margin-bottom: 12px; }
+
+    /* ── Statistics ── */
+    .stat-overview {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+    .stat-box {
+      background: white;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 18px 16px;
+      text-align: center;
+    }
+    .stat-box .s-num { font-size: 32px; font-weight: 800; line-height: 1; margin-bottom: 6px; }
+    .stat-box .s-label { font-size: 12px; color: var(--gray-400); }
+    .stat-box.blue .s-num { color: var(--primary); }
+    .stat-box.orange .s-num { color: var(--warning); }
+    .stat-box.green .s-num { color: #16a34a; }
+    .stat-box.purple .s-num { color: #7c3aed; }
+
+    .chart-card { background: white; border-radius: var(--radius); box-shadow: var(--shadow); padding: 20px; margin-bottom: 16px; }
+    .chart-title { font-size: 15px; font-weight: 700; color: var(--gray-800); margin-bottom: 18px; }
+
+    /* Bar chart */
+    .bar-chart { display: flex; flex-direction: column; gap: 12px; }
+    .bar-row { display: flex; align-items: center; gap: 12px; }
+    .bar-label { width: 48px; font-size: 13px; font-weight: 600; color: var(--gray-600); text-align: right; flex-shrink: 0; }
+    .bar-track { flex: 1; background: var(--gray-100); border-radius: 6px; height: 22px; overflow: hidden; position: relative; }
+    .bar-fill { height: 100%; border-radius: 6px; transition: width 0.6s ease; display: flex; align-items: center; padding-left: 8px; }
+    .bar-fill span { font-size: 11px; font-weight: 700; color: white; white-space: nowrap; }
+    .bar-meta { font-size: 12px; color: var(--gray-400); width: 50px; flex-shrink: 0; text-align: right; }
+
+    /* Mastery per subject */
+    .mastery-grid { display: flex; flex-direction: column; gap: 14px; }
+    .mastery-row { }
+    .mastery-header { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 5px; }
+    .mastery-name { font-weight: 600; color: var(--gray-800); }
+    .mastery-pct { color: var(--gray-400); }
+    .mastery-track { background: var(--gray-100); border-radius: 6px; height: 10px; overflow: hidden; }
+    .mastery-fill { height: 100%; background: var(--success); border-radius: 6px; transition: width 0.6s ease; }
+    .mastery-fill.low { background: var(--danger); }
+    .mastery-fill.mid { background: var(--warning); }
+
+    /* Trend chart (SVG) */
+    .trend-wrap { overflow-x: auto; }
+    .trend-wrap svg { display: block; }
+
+    /* Donut */
+    .donut-wrap { display: flex; align-items: center; gap: 28px; flex-wrap: wrap; }
+    .donut-legend { display: flex; flex-direction: column; gap: 10px; }
+    .legend-item { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+    .legend-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+
+    /* ── Lightbox ── */
+    .lightbox {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.85);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 2000; cursor: zoom-out;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.2s;
+    }
+    .lightbox.open { opacity: 1; pointer-events: all; }
+    .lightbox img { max-width: 92vw; max-height: 88vh; border-radius: 10px; box-shadow: 0 8px 40px rgba(0,0,0,0.5); }
+    .lightbox-close {
+      position: absolute; top: 18px; right: 22px;
+      font-size: 28px; color: white; cursor: pointer;
+      background: none; border: none; line-height: 1;
+    }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed; bottom: 30px; left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: var(--gray-800); color: white;
+      padding: 12px 24px; border-radius: 30px;
+      font-size: 14px; font-weight: 500;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+      transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+      z-index: 1000; white-space: nowrap;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+
+    /* ── Subject colors ── */
+    .subject-语文 { background: #fce7f3; color: #be185d; }
+    .subject-数学 { background: #e0e7ff; color: #4338ca; }
+    .subject-英语 { background: #d1fae5; color: #065f46; }
+    .subject-物理 { background: #fff7ed; color: #c2410c; }
+    .subject-化学 { background: #f0fdf4; color: #15803d; }
+    .subject-生物 { background: #ecfdf5; color: #047857; }
+    .subject-历史 { background: #fef3c7; color: #b45309; }
+    .subject-地理 { background: #e0f2fe; color: #0369a1; }
+    .subject-政治 { background: #fdf4ff; color: #7e22ce; }
+
+    @media (max-width: 640px) {
+      .main { padding: 14px; }
+      .form-grid { grid-template-columns: 1fr; }
+      .q-answers { grid-template-columns: 1fr; }
+      .header { padding: 14px 14px 0; }
+      .stats-bar { gap: 12px; }
+      .stat-overview { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-top">
+    <h1><span>📚</span>错题本</h1>
+    <div class="stats-bar">
+      <div class="stat-item">
+        <span class="stat-num" id="stat-total">0</span>
+        <span class="stat-label">总错题</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-num" id="stat-pending">0</span>
+        <span class="stat-label">待复习</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-num" id="stat-mastered">0</span>
+        <span class="stat-label">已掌握</span>
+      </div>
+    </div>
+  </div>
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('list')">我的错题</div>
+    <div class="tab" onclick="switchTab('add')">添加错题</div>
+    <div class="tab" onclick="switchTab('review')">复习模式</div>
+    <div class="tab" onclick="switchTab('stats')">数据统计</div>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- ── 错题列表 ── -->
+  <div class="panel active" id="panel-list">
+    <div class="filter-bar">
+      <input type="text" id="search-input" placeholder="搜索题目内容..." oninput="renderList()">
+      <select id="filter-subject" onchange="renderList()">
+        <option value="">全部科目</option>
+      </select>
+      <label class="show-mastered">
+        <input type="checkbox" id="show-mastered" onchange="renderList()">
+        显示已掌握
+      </label>
+    </div>
+    <div id="question-list"></div>
+  </div>
+
+  <!-- ── 添加错题 ── -->
+  <div class="panel" id="panel-add">
+    <div class="card">
+      <h2 style="font-size:17px;margin-bottom:18px;color:var(--gray-800)">添加新错题</h2>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>科目 <span class="req">*</span></label>
+          <select id="form-subject">
+            <option value="">请选择科目</option>
+            <option>语文</option><option>数学</option><option>英语</option>
+            <option>物理</option><option>化学</option><option>生物</option>
+            <option>历史</option><option>地理</option><option>政治</option>
+            <option>其他</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>题目来源</label>
+          <input type="text" id="form-source" placeholder="例：期中考试第3题">
+        </div>
+
+        <!-- 图片上传 -->
+        <div class="form-group full">
+          <label>题目图片（可拍照或从相册选取）</label>
+          <div class="upload-area" id="upload-area">
+            <input type="file" id="form-images" accept="image/*" multiple onchange="handleImages(this)">
+            <div class="upload-icon">📷</div>
+            <p>点击拍照 / 选择图片</p>
+            <small>支持多张，单张自动压缩至 800px 以内</small>
+          </div>
+          <div class="preview-grid" id="preview-grid"></div>
+        </div>
+
+        <div class="form-group full">
+          <label>题目内容 <span class="req">*</span></label>
+          <textarea id="form-question" placeholder="在此输入题目内容（若已上传图片可留空）..." rows="3"></textarea>
+        </div>
+        <div class="form-group">
+          <label>我的错误答案</label>
+          <textarea id="form-wrong" placeholder="填写你当时的错误答案..."></textarea>
+        </div>
+        <div class="form-group">
+          <label>正确答案 <span class="req">*</span></label>
+          <textarea id="form-correct" placeholder="填写正确答案..."></textarea>
+        </div>
+        <div class="form-group full">
+          <label>错误原因 / 知识点</label>
+          <textarea id="form-reason" placeholder="分析错误原因，记录涉及的知识点..."></textarea>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-primary" onclick="addQuestion()">保存错题</button>
+        <button class="btn btn-secondary" onclick="clearForm()">清空</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 复习模式 ── -->
+  <div class="panel" id="panel-review">
+    <div class="review-controls">
+      <select id="review-subject" onchange="startReview()">
+        <option value="">全部科目</option>
+      </select>
+      <button class="btn btn-primary" onclick="startReview()">重新开始</button>
+      <span class="review-progress" id="review-progress"></span>
+    </div>
+    <div id="review-area"></div>
+  </div>
+
+  <!-- ── 数据统计 ── -->
+  <div class="panel" id="panel-stats">
+    <div id="stats-content"></div>
+  </div>
+
+</div>
+
+<!-- Lightbox -->
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+  <button class="lightbox-close" onclick="closeLightbox()">✕</button>
+  <img id="lightbox-img" src="" alt="">
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- Hidden canvas for image compression -->
+<canvas id="compress-canvas" style="display:none"></canvas>
+
+<script>
+// ── Data ────────────────────────────────────────────────────────
+const STORAGE_KEY = 'cuoti_data_v2';
+
+function load() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
+  catch { return []; }
+}
+function save(data) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  } catch(e) {
+    showToast('存储空间不足，请删除部分图片后重试');
+  }
+}
+
+let questions = load();
+
+// ── Tab Navigation ───────────────────────────────────────────────
+const TAB_NAMES = ['list','add','review','stats'];
+
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach((t, i) => {
+    t.classList.toggle('active', TAB_NAMES[i] === tab);
+  });
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-' + tab).classList.add('active');
+  if (tab === 'list')   renderList();
+  if (tab === 'review') { updateSubjectSelects(); startReview(); }
+  if (tab === 'add')    updateSubjectSelects();
+  if (tab === 'stats')  renderStats();
+}
+
+// ── Stats bar ───────────────────────────────────────────────────
+function updateStats() {
+  const total    = questions.length;
+  const mastered = questions.filter(q => q.mastered).length;
+  document.getElementById('stat-total').textContent   = total;
+  document.getElementById('stat-pending').textContent = total - mastered;
+  document.getElementById('stat-mastered').textContent = mastered;
+}
+
+// ── Subject selects ──────────────────────────────────────────────
+function getSubjects() {
+  return [...new Set(questions.map(q => q.subject))].filter(Boolean);
+}
+
+function updateSubjectSelects() {
+  const subjects = getSubjects();
+  ['filter-subject','review-subject'].forEach(id => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    const val = sel.value;
+    sel.innerHTML = '<option value="">全部科目</option>';
+    subjects.forEach(s => {
+      const opt = document.createElement('option');
+      opt.value = s; opt.textContent = s;
+      sel.appendChild(opt);
+    });
+    if (subjects.includes(val)) sel.value = val;
+  });
+}
+
+// ── Image Upload & Compression ───────────────────────────────────
+let pendingImages = []; // [{dataUrl, name}]
+
+function handleImages(input) {
+  const files = Array.from(input.files);
+  if (!files.length) return;
+  const remaining = 5 - pendingImages.length;
+  if (remaining <= 0) { showToast('最多上传 5 张图片'); return; }
+  files.slice(0, remaining).forEach(file => {
+    compressImage(file, 800, 0.82, dataUrl => {
+      pendingImages.push({ dataUrl, name: file.name });
+      renderPreviews();
+    });
+  });
+  input.value = '';
+}
+
+function compressImage(file, maxPx, quality, cb) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.getElementById('compress-canvas');
+      let w = img.width, h = img.height;
+      if (w > maxPx || h > maxPx) {
+        if (w > h) { h = Math.round(h * maxPx / w); w = maxPx; }
+        else       { w = Math.round(w * maxPx / h); h = maxPx; }
+      }
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      cb(canvas.toDataURL('image/jpeg', quality));
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function renderPreviews() {
+  const grid = document.getElementById('preview-grid');
+  grid.innerHTML = pendingImages.map((img, i) => `
+    <div class="preview-item">
+      <img src="${img.dataUrl}" alt="">
+      <button class="remove-img" onclick="removePreview(${i})">✕</button>
+    </div>
+  `).join('');
+}
+
+function removePreview(i) {
+  pendingImages.splice(i, 1);
+  renderPreviews();
+}
+
+// ── Add Question ─────────────────────────────────────────────────
+function addQuestion() {
+  const subject  = document.getElementById('form-subject').value.trim();
+  const question = document.getElementById('form-question').value.trim();
+  const correct  = document.getElementById('form-correct').value.trim();
+
+  if (!subject) return showToast('请选择科目');
+  if (!question && pendingImages.length === 0) return showToast('请填写题目内容或上传图片');
+  if (!correct)  return showToast('请填写正确答案');
+
+  const q = {
+    id:      Date.now(),
+    subject,
+    source:  document.getElementById('form-source').value.trim(),
+    question,
+    images:  pendingImages.map(i => i.dataUrl),
+    wrong:   document.getElementById('form-wrong').value.trim(),
+    correct,
+    reason:  document.getElementById('form-reason').value.trim(),
+    mastered: false,
+    date:    new Date().toLocaleDateString('zh-CN'),
+    dateISO: new Date().toISOString().slice(0,10),
+  };
+
+  questions.unshift(q);
+  save(questions);
+  updateStats();
+  updateSubjectSelects();
+  clearForm();
+  showToast('错题已保存！');
+  switchTab('list');
+}
+
+function clearForm() {
+  ['form-subject','form-source','form-question','form-wrong','form-correct','form-reason']
+    .forEach(id => document.getElementById(id).value = '');
+  pendingImages = [];
+  renderPreviews();
+}
+
+// ── Delete / Toggle mastered ──────────────────────────────────────
+function deleteQuestion(id) {
+  if (!confirm('确认删除这道错题？')) return;
+  questions = questions.filter(q => q.id !== id);
+  save(questions);
+  updateStats();
+  updateSubjectSelects();
+  renderList();
+  showToast('已删除');
+}
+
+function toggleMastered(id) {
+  const q = questions.find(q => q.id === id);
+  if (!q) return;
+  q.mastered = !q.mastered;
+  save(questions);
+  updateStats();
+  renderList();
+  showToast(q.mastered ? '已标记为掌握 ✓' : '已取消掌握标记');
+}
+
+function toggleMasteredSilent(id) {
+  const q = questions.find(q => q.id === id);
+  if (q) { q.mastered = true; save(questions); updateStats(); }
+}
+
+// ── List Render ──────────────────────────────────────────────────
+function renderList() {
+  updateSubjectSelects();
+  const search        = document.getElementById('search-input').value.toLowerCase();
+  const subjectFilter = document.getElementById('filter-subject').value;
+  const showMastered  = document.getElementById('show-mastered').checked;
+
+  let filtered = questions.filter(q => {
+    if (!showMastered && q.mastered) return false;
+    if (subjectFilter && q.subject !== subjectFilter) return false;
+    if (search &&
+        !q.question.toLowerCase().includes(search) &&
+        !(q.reason||'').toLowerCase().includes(search) &&
+        !(q.correct||'').toLowerCase().includes(search)) return false;
+    return true;
+  });
+
+  const container = document.getElementById('question-list');
+  if (filtered.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="icon">${questions.length === 0 ? '📝' : '🔍'}</div>
+        <p>${questions.length === 0 ? '还没有错题记录' : '没有找到匹配的错题'}</p>
+        <small>${questions.length === 0 ? '点击「添加错题」开始记录吧' : '试试修改筛选条件'}</small>
+      </div>`;
+    return;
+  }
+
+  container.innerHTML = filtered.map(q => `
+    <div class="question-card ${q.mastered ? 'mastered' : ''}">
+      <div class="q-header">
+        <span class="q-subject subject-${q.subject}">${q.subject}</span>
+        ${q.source ? `<span style="font-size:12px;color:var(--gray-400)">${escHtml(q.source)}</span>` : ''}
+        ${q.mastered ? '<span class="q-mastered-badge">✓ 已掌握</span>' : ''}
+        <span class="q-date">${q.date}</span>
+      </div>
+      ${q.question ? `<div class="q-title">${escHtml(q.question)}</div>` : ''}
+      ${(q.images||[]).length ? `
+        <div class="q-images">
+          ${q.images.map(src => `<img src="${src}" onclick="openLightbox(this)" alt="题目图片">`).join('')}
+        </div>` : ''}
+      <div class="q-answers">
+        ${q.wrong ? `
+        <div class="q-answer-block q-wrong">
+          <div class="label">✗ 我的错误答案</div>
+          ${escHtml(q.wrong)}
+        </div>` : '<div></div>'}
+        <div class="q-answer-block q-correct">
+          <div class="label">✓ 正确答案</div>
+          ${escHtml(q.correct)}
+        </div>
+      </div>
+      ${q.reason ? `
+      <div class="q-reason">
+        <div class="label">💡 错误原因 / 知识点</div>
+        ${escHtml(q.reason)}
+      </div>` : ''}
+      <div class="q-actions">
+        <button class="btn btn-sm ${q.mastered ? 'btn-secondary' : 'btn-success'}"
+          onclick="toggleMastered(${q.id})">
+          ${q.mastered ? '取消掌握' : '✓ 标记掌握'}
+        </button>
+        <button class="btn btn-sm btn-danger" onclick="deleteQuestion(${q.id})">删除</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ── Review Mode ──────────────────────────────────────────────────
+let reviewList = [], reviewIndex = 0, answerVisible = false;
+
+function startReview() {
+  const subjectFilter = document.getElementById('review-subject').value;
+  reviewList = questions.filter(q => !q.mastered && (!subjectFilter || q.subject === subjectFilter));
+  for (let i = reviewList.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [reviewList[i], reviewList[j]] = [reviewList[j], reviewList[i]];
+  }
+  reviewIndex = 0; answerVisible = false;
+  renderReview();
+}
+
+function renderReview() {
+  const area     = document.getElementById('review-area');
+  const progress = document.getElementById('review-progress');
+
+  if (reviewList.length === 0) {
+    progress.textContent = '';
+    area.innerHTML = `
+      <div class="no-review">
+        <div class="icon">🎉</div>
+        <p style="font-size:16px;font-weight:600;color:var(--gray-800);margin-bottom:8px">
+          ${questions.filter(q => !q.mastered).length === 0 ? '所有错题都已掌握！' : '该科目没有待复习的错题'}
+        </p>
+        <p style="font-size:13px">换个科目试试，或者去添加新错题</p>
+      </div>`;
+    return;
+  }
+
+  const q = reviewList[reviewIndex];
+  progress.textContent = `${reviewIndex + 1} / ${reviewList.length}`;
+
+  area.innerHTML = `
+    <div class="review-card">
+      <div>
+        <span class="review-subject-badge subject-${q.subject}">${q.subject}</span>
+        ${q.source ? `<span style="font-size:12px;color:var(--gray-400);margin-left:8px">${escHtml(q.source)}</span>` : ''}
+      </div>
+      ${q.question ? `<div class="review-question">${escHtml(q.question)}</div>` : ''}
+      ${(q.images||[]).length ? `
+        <div class="review-images">
+          ${q.images.map(src => `<img src="${src}" onclick="openLightbox(this)" alt="题目图片">`).join('')}
+        </div>` : ''}
+      ${!q.question && !(q.images||[]).length ? '<div class="review-question">（无题目内容）</div>' : ''}
+
+      ${answerVisible ? `
+      <div class="review-answer">
+        <div class="answer-block" style="background:#fee2e2">
+          <div class="label" style="color:var(--danger)">✗ 错误答案</div>
+          ${q.wrong ? escHtml(q.wrong) : '<em style="color:var(--gray-400)">未记录</em>'}
+        </div>
+        <div class="answer-block" style="background:var(--success-light)">
+          <div class="label" style="color:#16a34a">✓ 正确答案</div>
+          ${escHtml(q.correct)}
+        </div>
+        ${q.reason ? `
+        <div class="answer-block" style="background:#fffbeb;color:#92400e">
+          <div class="label" style="color:var(--warning)">💡 错误原因</div>
+          ${escHtml(q.reason)}
+        </div>` : ''}
+      </div>` : `
+      <div style="color:var(--gray-400);font-size:14px;margin-top:8px">思考一下，准备好了再查看答案</div>
+      `}
+    </div>
+    <div class="review-nav">
+      ${reviewIndex > 0 ? `<button class="btn btn-secondary" onclick="reviewNav(-1)">上一题</button>` : ''}
+      ${!answerVisible
+        ? `<button class="btn btn-primary" onclick="showAnswer()">查看答案</button>`
+        : `<button class="btn btn-success" onclick="markAndNext()">✓ 已掌握，下一题</button>
+           <button class="btn btn-secondary" onclick="reviewNav(1)">还没掌握，下一题</button>`
+      }
+    </div>
+  `;
+}
+
+function showAnswer() { answerVisible = true; renderReview(); }
+
+function reviewNav(dir) {
+  reviewIndex = Math.min(reviewList.length - 1, Math.max(0, reviewIndex + dir));
+  answerVisible = false;
+  renderReview();
+}
+
+function markAndNext() {
+  toggleMasteredSilent(reviewList[reviewIndex].id);
+  reviewList.splice(reviewIndex, 1);
+  if (reviewIndex >= reviewList.length) reviewIndex = Math.max(0, reviewList.length - 1);
+  answerVisible = false;
+  document.getElementById('review-progress').textContent =
+    reviewList.length > 0 ? `${reviewIndex + 1} / ${reviewList.length}` : '';
+  renderReview();
+  showToast('✓ 已标记为掌握');
+}
+
+// ── Statistics ───────────────────────────────────────────────────
+const SUBJECT_COLORS = {
+  '语文':'#be185d','数学':'#4338ca','英语':'#065f46','物理':'#c2410c',
+  '化学':'#15803d','生物':'#047857','历史':'#b45309','地理':'#0369a1',
+  '政治':'#7e22ce','其他':'#6b7280',
+};
+
+function renderStats() {
+  const total    = questions.length;
+  const mastered = questions.filter(q => q.mastered).length;
+  const pending  = total - mastered;
+  const rate     = total ? Math.round(mastered / total * 100) : 0;
+
+  // per-subject counts
+  const subjects = getSubjects();
+  const bySubject = {};
+  subjects.forEach(s => {
+    bySubject[s] = { total: 0, mastered: 0 };
+  });
+  questions.forEach(q => {
+    if (bySubject[q.subject]) {
+      bySubject[q.subject].total++;
+      if (q.mastered) bySubject[q.subject].mastered++;
+    }
+  });
+  const maxCount = Math.max(1, ...subjects.map(s => bySubject[s].total));
+
+  // trend: last 14 days
+  const trendData = buildTrend(14);
+
+  const container = document.getElementById('stats-content');
+  if (total === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="icon">📊</div>
+        <p>还没有数据</p>
+        <small>添加错题后这里会显示统计图表</small>
+      </div>`;
+    return;
+  }
+
+  container.innerHTML = `
+    <!-- Overview -->
+    <div class="stat-overview">
+      <div class="stat-box blue">
+        <div class="s-num">${total}</div>
+        <div class="s-label">总错题数</div>
+      </div>
+      <div class="stat-box orange">
+        <div class="s-num">${pending}</div>
+        <div class="s-label">待复习</div>
+      </div>
+      <div class="stat-box green">
+        <div class="s-num">${mastered}</div>
+        <div class="s-label">已掌握</div>
+      </div>
+      <div class="stat-box purple">
+        <div class="s-num">${rate}%</div>
+        <div class="s-label">掌握率</div>
+      </div>
+    </div>
+
+    <!-- Subject distribution -->
+    <div class="chart-card">
+      <div class="chart-title">各科目错题数量</div>
+      <div class="bar-chart">
+        ${subjects.sort((a,b) => bySubject[b].total - bySubject[a].total).map(s => {
+          const pct = Math.round(bySubject[s].total / maxCount * 100);
+          const color = SUBJECT_COLORS[s] || '#6b7280';
+          return `
+          <div class="bar-row">
+            <span class="bar-label">${s}</span>
+            <div class="bar-track">
+              <div class="bar-fill" style="width:${pct}%;background:${color}">
+                <span>${bySubject[s].total}</span>
+              </div>
+            </div>
+            <span class="bar-meta">${bySubject[s].mastered}已掌握</span>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
+
+    <!-- Mastery rate per subject -->
+    <div class="chart-card">
+      <div class="chart-title">各科目掌握率</div>
+      <div class="mastery-grid">
+        ${subjects.sort((a,b) => {
+            const ra = bySubject[a].total ? bySubject[a].mastered/bySubject[a].total : 0;
+            const rb = bySubject[b].total ? bySubject[b].mastered/bySubject[b].total : 0;
+            return rb - ra;
+          }).map(s => {
+            const pct = bySubject[s].total ? Math.round(bySubject[s].mastered / bySubject[s].total * 100) : 0;
+            const cls = pct >= 70 ? '' : pct >= 40 ? 'mid' : 'low';
+            return `
+            <div class="mastery-row">
+              <div class="mastery-header">
+                <span class="mastery-name">${s}</span>
+                <span class="mastery-pct">${bySubject[s].mastered}/${bySubject[s].total} · ${pct}%</span>
+              </div>
+              <div class="mastery-track">
+                <div class="mastery-fill ${cls}" style="width:${pct}%"></div>
+              </div>
+            </div>`;
+          }).join('')}
+      </div>
+    </div>
+
+    <!-- 14-day trend -->
+    <div class="chart-card">
+      <div class="chart-title">近 14 天添加趋势</div>
+      ${renderTrendSVG(trendData)}
+    </div>
+  `;
+}
+
+function buildTrend(days) {
+  const result = [];
+  const today = new Date();
+  for (let i = days - 1; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    const iso = d.toISOString().slice(0, 10);
+    const label = `${d.getMonth()+1}/${d.getDate()}`;
+    const count = questions.filter(q => (q.dateISO || '') === iso).length;
+    result.push({ label, count });
+  }
+  return result;
+}
+
+function renderTrendSVG(data) {
+  const W = 760, H = 120, padL = 28, padR = 12, padT = 10, padB = 30;
+  const maxVal = Math.max(1, ...data.map(d => d.count));
+  const xs = data.map((_, i) => padL + i * (W - padL - padR) / (data.length - 1));
+  const ys = data.map(d => padT + (1 - d.count / maxVal) * (H - padT - padB));
+
+  const polyline = xs.map((x, i) => `${x},${ys[i]}`).join(' ');
+  const area = `${xs[0]},${H - padB} ` + xs.map((x,i) => `${x},${ys[i]}`).join(' ') + ` ${xs[xs.length-1]},${H - padB}`;
+
+  const dots = data.map((d, i) => d.count > 0
+    ? `<circle cx="${xs[i]}" cy="${ys[i]}" r="4" fill="#4f46e5"/>
+       <text x="${xs[i]}" y="${ys[i]-8}" text-anchor="middle" font-size="10" fill="#4f46e5" font-weight="600">${d.count}</text>`
+    : ''
+  ).join('');
+
+  const labels = data.map((d, i) => {
+    if (data.length <= 10 || i % 2 === 0)
+      return `<text x="${xs[i]}" y="${H - padB + 16}" text-anchor="middle" font-size="10" fill="#9ca3af">${d.label}</text>`;
+    return '';
+  }).join('');
+
+  return `<div class="trend-wrap">
+    <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:${H}px">
+      <defs>
+        <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#4f46e5" stop-opacity="0.18"/>
+          <stop offset="100%" stop-color="#4f46e5" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+      <line x1="${padL}" y1="${padT}" x2="${padL}" y2="${H-padB}" stroke="#e5e7eb" stroke-width="1"/>
+      <line x1="${padL}" y1="${H-padB}" x2="${W-padR}" y2="${H-padB}" stroke="#e5e7eb" stroke-width="1"/>
+      <polygon points="${area}" fill="url(#areaGrad)"/>
+      <polyline points="${polyline}" fill="none" stroke="#4f46e5" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+      ${dots}
+      ${labels}
+    </svg>
+  </div>`;
+}
+
+// ── Lightbox ─────────────────────────────────────────────────────
+function openLightbox(img) {
+  document.getElementById('lightbox-img').src = img.src;
+  document.getElementById('lightbox').classList.add('open');
+}
+function closeLightbox() {
+  document.getElementById('lightbox').classList.remove('open');
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLightbox(); });
+
+// ── Utils ────────────────────────────────────────────────────────
+function escHtml(str) {
+  return String(str)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/\n/g,'<br>');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2400);
+}
+
+// ── Init ─────────────────────────────────────────────────────────
+updateStats();
+updateSubjectSelects();
+renderList();
+
+// ── PWA Service Worker ────────────────────────────────────────────
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  });
+}
+</script>
+</body>
+</html>
